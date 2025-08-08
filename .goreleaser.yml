@@ -1,3 +1,5 @@
+version: 2
+project_name: tracentp
 before:
   hooks:
     - go mod tidy
@@ -7,29 +9,24 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
       - freebsd
     goarch:
       - amd64
       - arm64
       - riscv64
-    ignore:
-      - goos == windows && goarch == arm64
     binary: tracentp
     ldflags:
       - -s -w -X main.version={{.Version}}
 
 archives:
-  - format: tar.gz
-    name_template: >-
+  - name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else }}{{ .Arch }}{{ end }}
     format_overrides:
       - goos: windows
-        format: zip
     files:
       - README.md
       - LICENSE*
@@ -48,15 +45,8 @@ checksum:
   name_template: 'checksums.txt'
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
 
-dist:
-  name_template: >-
-    {{ .ProjectName }}_
-    {{- .Version }}_
-    {{- .Os }}_
-    {{- .Arch }}
-  dist: dist
+# Remove the dist section entirely as it's not a valid GoReleaser configuration
 
 release:
   name_template: '{{ .ProjectName }} {{ .Version }}'
