@@ -29,10 +29,27 @@ type args struct {
 	Timeout time.Duration `arg:"-t,--timeout" help:"timeout duration" default:"3s"`
 	Port    int           `arg:"-p,--port" help:"NTP server port" default:"123"`
 	Count   int           `arg:"-c,--count" help:"stop after COUNT replies, if only 1 count, it act like ping" default:"16"`
+	IPv6    bool          `arg:"-6,--ipv6" help:"prefer IPv6" default:"false"`
 }
 
 func (args) Version() string {
 	return version
+}
+
+func resolveToIP(s string, ipv6 bool) (net.IP, error) {
+	ip := net.ParseIP(s)
+	if ip != nil {
+		return ip, nil
+	}
+	network := "ip4"
+	if ipv6 {
+		network = "ip6"
+	}
+	ipa, err := net.ResolveIPAddr(network, s)
+	if err != nil {
+		return nil, err
+	}
+	return ipa.IP, nil
 }
 
 func main() {
@@ -40,10 +57,18 @@ func main() {
 	var args args
 
 	arg.MustParse(&args)
-	addr := args.Address
+
+	raddr, err := resolveToIP(args.Address, args.IPv6)
+	if err != nil {
+		fmt.Printf("error from %s:%s\n", args.Address, err)
+		os.Exit(1)
+	}
+	addr := raddr.String()
+
 	if args.Port != 123 {
 		addr = fmt.Sprintf("%s:%d", args.Address, args.Port)
 	}
+
 	tmpl := template.Must(template.New("").Parse(defaultTemplate))
 
 	for i := 0; i < args.Count; i++ {
